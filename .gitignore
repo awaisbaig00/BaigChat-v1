@@ -35,3 +35,5 @@ Thumbs.db
 *.log
 .vscode/
 .idea/
+full_prompt.txt
+scratch_prompt.txt
