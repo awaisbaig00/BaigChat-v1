@@ -11,6 +11,8 @@ COPY server/package*.json ./server/
 COPY client/package*.json ./client/
 
 # Install dependencies
+# Install native build tools required for building native modules (e.g., better-sqlite3)
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
 RUN cd server && npm ci
 RUN cd client && npm ci
 
