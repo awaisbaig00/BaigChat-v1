@@ -65,13 +65,67 @@ The client dev server runs at `http://localhost:5173` and proxies API calls to `
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `SESSION_SECRET` | **Yes** | — | Min 64 chars, random. Generate: `openssl rand -hex 64` |
-| `PORT` | No | `3001` | Server listen port |
-| `CORS_ORIGIN` | No | `http://localhost:5173` | Exact client origin for CORS & WS |
-| `CLIENT_ORIGIN` | No | Same as `CORS_ORIGIN` | Alias for CORS_ORIGIN |
-| `NODE_ENV` | No | `development` | Set to `production` in prod |
-| `DB_PATH` | No | `data.db` | SQLite database file path |
-| `UPLOADS_DIR` | No | `./uploads` | Directory for uploaded files |
-| `AVATARS_DIR` | No | `./avatars` | Directory for avatar images |
+| `PORT` | No | `3001` | Server listen port (binds to `0.0.0.0`) |
+| `DATA_DIR` | No | `./data` | Base directory for SQLite DB, uploads, and avatars (`/data` in container) |
+| `CORS_ORIGIN` | No | `http://localhost:5173` | Allowed origin for CORS & WS (defaults to `CLIENT_ORIGIN` if provided) |
+| `CLIENT_ORIGIN` | No | Same as `CORS_ORIGIN` | Public origin for client links & CSRF verification |
+| `NODE_ENV` | No | `development` | Set to `production` in prod (enables `trust proxy: 1`, HSTS, secure cookies) |
+| `DB_PATH` | No | `<DATA_DIR>/data.db` | Optional override for SQLite database file path |
+| `UPLOADS_DIR` | No | `<DATA_DIR>/uploads` | Optional override for uploaded files directory |
+| `AVATARS_DIR` | No | `<DATA_DIR>/avatars` | Optional override for avatar images directory |
+
+---
+
+## Deploying on Suga
+
+BaigChat is packaged as a lightweight, secure container image built on `node:22-bookworm-slim` that runs as a non-root user (`node`). In production, Express serves both the compiled client SPA and the API/WebSocket server from a single origin.
+
+### 1. Volume Mount Path
+
+- **Mount Path:** `/data`
+- Mount a persistent volume to `/data` in the container.
+- The SQLite database file (`/data/data.db`, plus WAL and SHM files), file uploads (`/data/uploads`), and user avatars (`/data/avatars`) are all stored here and will be auto-created on boot if missing.
+- Ensure the mounted volume directory is writable by UID 1000 (`node`).
+
+### 2. Environment Variables to Set
+
+| Variable | Recommended Value | Notes |
+|---|---|---|
+| `NODE_ENV` | `production` | Enables production mode, strict HSTS, secure cookies, and Express `trust proxy` (1) |
+| `SESSION_SECRET` | `<64+ hex characters>` | Generate with `openssl rand -hex 64` |
+| `DATA_DIR` | `/data` | Path to the mounted persistent volume |
+| `CLIENT_ORIGIN` | `https://<your-suga-domain>` | Your production app URL (e.g. `https://chat.suga.app`) |
+| `CORS_ORIGIN` | `https://<your-suga-domain>` | Same as `CLIENT_ORIGIN` |
+| `PORT` | `3001` | Express port (default: 3001, listening on `0.0.0.0`) |
+
+### 3. Build & Run Steps
+
+**Build the container image:**
+
+```bash
+docker build -t baigchat:latest .
+```
+
+**Run the container:**
+
+```bash
+docker run -d \
+  --name baigchat \
+  -p 3001:3001 \
+  -e NODE_ENV=production \
+  -e SESSION_SECRET="$(openssl rand -hex 64)" \
+  -e DATA_DIR=/data \
+  -e CLIENT_ORIGIN="https://chat.your-domain.com" \
+  -v /path/to/persistent/data:/data \
+  baigchat:latest
+```
+
+### 4. Health Checks, Reverse Proxy & Shutdown
+
+- **Health check:** `GET /healthz` is unauthenticated and returns `200 OK` (checks database connectivity).
+- **Reverse Proxy / TLS:** Express has `trust proxy: 1` enabled in production, so `req.ip`, rate limiters, account lockout, and secure cookies work accurately behind Suga's TLS-terminating reverse proxy.
+- **WebSocket:** Real-time chat WebSocket upgrades at `/ws` are verified against `CLIENT_ORIGIN` / `CORS_ORIGIN`.
+- **Graceful Shutdown:** The container responds to `SIGTERM` by closing all active WebSocket connections, stopping HTTP listeners, safely closing the SQLite database, and exiting cleanly.
 
 ---
 

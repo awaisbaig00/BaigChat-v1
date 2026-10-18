@@ -1,8 +1,8 @@
 import { Server as HttpServer, IncomingMessage } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import cookie from 'cookie';
-import { CORS_ORIGIN } from '../config';
 import { db } from '../db';
+import { CORS_ORIGIN, isOriginAllowed } from '../config';
 import { hashToken, SESSION_COOKIE_NAME } from '../auth/session';
 import {
   registerSocket,
@@ -43,8 +43,8 @@ export function setupWebSocket(server: HttpServer) {
   server.on('upgrade', (req: IncomingMessage, socket, head) => {
     const origin = req.headers.origin;
 
-    // Strict Origin check against CORS_ORIGIN
-    if (!origin || origin !== CORS_ORIGIN) {
+    // Strict Origin check against allowed origins
+    if (!origin || !isOriginAllowed(origin)) {
       socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
       return;
     }
@@ -101,6 +101,9 @@ export function setupWebSocket(server: HttpServer) {
       ws.ping();
     });
   }, 30000);
+  if (heartbeatInterval.unref) {
+    heartbeatInterval.unref();
+  }
 
   wss.on('close', () => {
     clearInterval(heartbeatInterval);
@@ -175,6 +178,8 @@ export function setupWebSocket(server: HttpServer) {
       console.warn(`WebSocket error on socket for user ${userId}:`, err?.message || err);
     });
   });
+
+  return wss;
 }
 
 function checkMembership(conversationId: string, userId: number): boolean {

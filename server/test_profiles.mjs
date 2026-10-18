@@ -371,7 +371,11 @@ async function runStage2Tests() {
     });
 
     // Verify avatar files exist on disk with correct sizes
-    const avatarsDir = path.resolve(process.cwd(), 'avatars');
+    const avatarsDir =
+      process.env.AVATARS_DIR ||
+      (fs.existsSync(path.resolve(process.cwd(), 'data/avatars'))
+        ? path.resolve(process.cwd(), 'data/avatars')
+        : path.resolve(process.cwd(), 'avatars'));
     const fullPath = path.join(avatarsDir, `${userA.user.id}_full.webp`);
     const thumbPath = path.join(avatarsDir, `${userA.user.id}_thumb.webp`);
 

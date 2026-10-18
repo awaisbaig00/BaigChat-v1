@@ -20,6 +20,9 @@ server/*.db-shm
 *.db-journal
 *.db-wal
 *.db-shm
+data/
+server/data/
+**/data/
 test-*
 server/test-*
 

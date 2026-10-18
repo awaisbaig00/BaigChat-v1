@@ -8,7 +8,14 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVER_DIR="$(dirname "$SCRIPT_DIR")"
-DB_PATH="${DB_PATH:-$SERVER_DIR/data.db}"
+DATA_DIR="${DATA_DIR:-$SERVER_DIR/data}"
+if [ -z "${DB_PATH:-}" ]; then
+  if [ -f "$DATA_DIR/data.db" ]; then
+    DB_PATH="$DATA_DIR/data.db"
+  else
+    DB_PATH="$SERVER_DIR/data.db"
+  fi
+fi
 BACKUP_DIR="$SERVER_DIR/backups"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="$BACKUP_DIR/backup_$TIMESTAMP.db"

@@ -238,7 +238,12 @@ async function runTests() {
 
       // Fetch row to find stored_name
       const row = db.prepare('SELECT stored_name FROM attachments WHERE id = ?').get(attId);
-      const storedPath = path.resolve('uploads', row.stored_name);
+      const uploadsDir =
+        process.env.UPLOADS_DIR ||
+        (fs.existsSync(path.resolve(process.cwd(), 'data/uploads'))
+          ? path.resolve(process.cwd(), 'data/uploads')
+          : path.resolve(process.cwd(), 'uploads'));
+      const storedPath = path.join(uploadsDir, row.stored_name);
       const storedBuffer = fs.readFileSync(storedPath);
 
       // Inspect with sharp

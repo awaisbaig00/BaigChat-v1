@@ -1,22 +1,22 @@
 import crypto from 'crypto';
 import { Request, Response, NextFunction } from 'express';
-import { CORS_ORIGIN, IS_PROD } from '../config';
+import { IS_PROD, isOriginAllowed } from '../config';
 
 /**
- * Validates Origin / Referer header against allowed CORS_ORIGIN.
+ * Validates Origin / Referer header against allowed CLIENT_ORIGIN / CORS_ORIGIN.
  */
 export function checkOrigin(req: Request): boolean {
   const origin = req.headers.origin;
   const referer = req.headers.referer;
 
   if (origin) {
-    return origin === CORS_ORIGIN;
+    return isOriginAllowed(origin);
   }
 
   if (referer) {
     try {
       const refererUrl = new URL(referer);
-      return refererUrl.origin === CORS_ORIGIN;
+      return isOriginAllowed(refererUrl.origin);
     } catch {
       return false;
     }

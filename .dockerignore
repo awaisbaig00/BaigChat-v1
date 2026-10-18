@@ -1,0 +1,61 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# SQLite databases, journals, and runtime data
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+**/*.db
+**/*.db-journal
+**/*.db-wal
+**/*.db-shm
+data
+**/data
+
+# User uploaded files and avatars
+uploads
+**/uploads
+avatars
+**/avatars
+test-uploads
+**/test-uploads
+test-avatars
+**/test-avatars
+
+# Test files and test suites
+test_*.mjs
+**/test_*.mjs
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+**/tests
+**/__tests__
+
+# Build outputs
+dist
+**/dist
+
+# Version control and IDE files
+.git
+.gitignore
+.gitattributes
+.vscode
+.idea
+.gemini
+.agents
+*.log
+Thumbs.db
+.DS_Store
+full_prompt.txt
+scratch_prompt.txt
